@@ -3,6 +3,7 @@ test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
 import random
+from random import randint
 
 
 class SearchTimeout(Exception):
@@ -213,7 +214,18 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         # TODO: finish this function!
-        raise NotImplementedError
+        #raise NotImplementedError
+        """
+        return
+        ----------
+        (int, int)
+            A randomly selected legal move; may return (-1, -1) if there are
+            no available legal moves.
+        """
+        legal_moves = game.get_legal_moves()
+        if not legal_moves:
+            return (-1, -1)
+        return legal_moves[randint(0, len(legal_moves) - 1)]
 
 
 class AlphaBetaPlayer(IsolationPlayer):
