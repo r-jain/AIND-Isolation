@@ -36,8 +36,13 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    return 0
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -172,7 +177,7 @@ class MinimaxPlayer(IsolationPlayer):
         return best_move
     
     def minimax(self, game, depth):
-        print('*** Enter Minimax ***')
+        #print('*** Enter Minimax ***')
         """Implement depth-limited minimax search algorithm as described in
         the lectures.
 
@@ -212,43 +217,51 @@ class MinimaxPlayer(IsolationPlayer):
                 testing.
         """
         def max_value(game, depth):
-            print('*** Enter max_value *** depth:', depth)
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout()
+            #print('*** Enter max_value *** depth:', depth)
             """ Return the value for a loss (-inf) if the game is over,
             otherwise return the maximum value over all legal child
             nodes.
             """
             if not bool(game.get_legal_moves()):
-                return game.utility(game.active_player)  # return utility value
+                # return utility value
+                return game.utility(self)  
             
             # New conditional depth limit cutoff
             if depth <= 0:  # "==" could be used, but "<=" is safer 
-                return 0
+                # self.score()` method for board evaluation
+                return self.score(game, self)
             
             v = float("-inf")
             for m in game.get_legal_moves():
                 # the depth should be decremented by 1 on each call
                 v = max(v, min_value(game.forecast_move(m), depth - 1))
-            print('*** Exit max_value *** value:', v)
+            #print('*** Exit max_value *** value:', v)
             return v
 
         def min_value(game, depth):
-            print('*** Enter min_value *** depth:', depth)
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout()
+            #print('*** Enter min_value *** depth:', depth)
             """ Return the value for a win (+inf) if the game is over,
             otherwise return the minimum value over all legal child
             nodes.
             """
             if not bool(game.get_legal_moves()):
-                return game.utility(game.active_player) # return utility value
+                # return utility value
+                return game.utility(self) 
             
             # New conditional depth limit cutoff
             if depth <= 0:  # "==" could be used, but "<=" is safer 
-                return 0
+                #self.score()` method for board evaluation
+                return self.score(game, self)
             
             v = float("inf")
             for m in game.get_legal_moves():
                 # the depth should be decremented by 1 on each call
                 v = min(v, max_value(game.forecast_move(m), depth - 1))
-            print('*** Exit min_value *** value:', v)
+            #print('*** Exit min_value *** value:', v)
             return v
 
 
@@ -281,7 +294,7 @@ class MinimaxPlayer(IsolationPlayer):
             if v > best_score:
                 best_score = v
                 best_move = m
-        print('*** Exit Minimax ***  with best_move ***', best_move)
+        #print('*** Exit Minimax ***  with best_move ***', best_move)
         return best_move
 
 
@@ -376,3 +389,40 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         # TODO: finish this function!
         raise NotImplementedError
+
+if __name__ == "__main__":
+    from isolation import Board
+
+    # create an isolation board (by default 7x7)
+    player1 = MinimaxPlayer()
+    player2 = MinimaxPlayer()
+    game = Board(player1, player2)
+
+    # place player 1 on the board at row 2, column 3, then place player 2 on
+    # the board at row 0, column 5; display the resulting board state.  Note
+    # that the .apply_move() method changes the calling object in-place.
+    game.apply_move((2, 3))
+    game.apply_move((0, 5))
+    print(game.to_string())
+
+    # players take turns moving on the board, so player1 should be next to move
+    assert(player1 == game.active_player)
+
+    # get a list of the legal moves available to the active player
+    print(game.get_legal_moves())
+
+    # get a successor of the current state by making a copy of the board and
+    # applying a move. Notice that this does NOT change the calling object
+    # (unlike .apply_move()).
+    new_game = game.forecast_move((1, 1))
+    assert(new_game.to_string() != game.to_string())
+    print("\nOld state:\n{}".format(game.to_string()))
+    print("\nNew state:\n{}".format(new_game.to_string()))
+
+    # play the remainder of the game automatically -- outcome can be "illegal
+    # move", "timeout", or "forfeit"
+    winner, history, outcome = game.play()
+    print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
+    print(game.to_string())
+    print("Move history:\n{!s}".format(history))
+
