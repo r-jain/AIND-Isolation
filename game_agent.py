@@ -388,7 +388,18 @@ class AlphaBetaPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         # TODO: finish this function!
-        raise NotImplementedError
+        #raise NotImplementedError
+        """
+        return
+        ----------
+        (int, int)
+            A randomly selected legal move; may return (-1, -1) if there are
+            no available legal moves.
+        """
+        legal_moves = game.get_legal_moves()
+        if not legal_moves:
+            return (-1, -1)
+        return legal_moves[randint(0, len(legal_moves) - 1)]
 
 if __name__ == "__main__":
     from isolation import Board
