@@ -3,8 +3,6 @@ test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
 import random
-from random import randint
-
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
@@ -42,7 +40,7 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return 0
+    return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.get_opponent(player))))
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -163,7 +161,10 @@ class MinimaxPlayer(IsolationPlayer):
 
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
-        best_move = (-1, -1)
+        if game.get_legal_moves():
+            best_move = game.get_legal_moves()[0]
+        else:
+            best_move = (-1, -1)
 
         try:
             # The try/except block will automatically catch the exception
@@ -270,14 +271,7 @@ class MinimaxPlayer(IsolationPlayer):
 
         # TODO: finish this function!
         #raise NotImplementedError
-        """
-        return
-        ----------
-        (int, int)
-            A randomly selected legal move; may return (-1, -1) if there are
-            no available legal moves.
-        """
-
+        
         """ Return the move along a branch of the game tree that
         has the best possible value.  A move is a pair of coordinates
         in (column, row) order corresponding to a legal move for
@@ -337,7 +331,29 @@ class AlphaBetaPlayer(IsolationPlayer):
         self.time_left = time_left
 
         # TODO: finish this function!
-        raise NotImplementedError
+        #raise NotImplementedError
+
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        if game.get_legal_moves():
+            best_move = game.get_legal_moves()[0]
+        else:
+            best_move = (-1, -1)
+        depth = 1
+        try:
+            # Iterative Deepening
+            # Apply cutoff when the timer is about to expire.
+            while self.time_left() > self.TIMER_THRESHOLD:
+                best_move = self.alphabeta(game, depth)
+                depth = depth+1;
+            return best_move
+
+        except SearchTimeout:
+            # When the time expires: Return the best move from the last completed search iteration
+            pass  
+
+        # Return the best move from the last completed search iteration
+        return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -384,29 +400,92 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+        def max_value(game, depth, alpha, beta):
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout()
+            #print('*** Enter max_value *** depth:', depth)
+            """ Return the value for a loss (-inf) if the game is over,
+            otherwise return the maximum value over all legal child
+            nodes.
+            """
+            if not bool(game.get_legal_moves()):
+                # return utility value
+                return game.utility(self)  
+            
+            # New conditional depth limit cutoff
+            if depth <= 0:  # "==" could be used, but "<=" is safer 
+                # self.score()` method for board evaluation
+                return self.score(game, self)
+            
+            v = float("-inf")
+            for m in game.get_legal_moves():
+                # the depth should be decremented by 1 on each call
+                v = max(v, min_value(game.forecast_move(m), depth - 1, alpha, beta))
+                if v >= beta:
+                    return v
+                alpha = max(alpha, v)
+            #print('*** Exit max_value *** value:', v)
+            return v
+
+        def min_value(game, depth, alpha, beta):
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout()
+            #print('*** Enter min_value *** depth:', depth)
+            """ Return the value for a win (+inf) if the game is over,
+            otherwise return the minimum value over all legal child
+            nodes.
+            """
+            if not bool(game.get_legal_moves()):
+                # return utility value
+                return game.utility(self) 
+            
+            # New conditional depth limit cutoff
+            if depth <= 0:  # "==" could be used, but "<=" is safer 
+                #self.score()` method for board evaluation
+                return self.score(game, self)
+            
+            v = float("inf")
+            for m in game.get_legal_moves():
+                # the depth should be decremented by 1 on each call
+                v = min(v, max_value(game.forecast_move(m), depth - 1, alpha, beta))
+                if v <= alpha:
+                    return v
+                beta = min(beta, v)
+            #print('*** Exit min_value *** value:', v)
+            return v
+
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
         # TODO: finish this function!
         #raise NotImplementedError
+
+        """ Return the move along a branch of the game tree that
+        has the best possible value.  A move is a pair of coordinates
+        in (column, row) order corresponding to a legal move for
+        the searching player.
+        
+        You can ignore the special case of calling this function
+        from a terminal state.
         """
-        return
-        ----------
-        (int, int)
-            A randomly selected legal move; may return (-1, -1) if there are
-            no available legal moves.
-        """
-        legal_moves = game.get_legal_moves()
-        if not legal_moves:
-            return (-1, -1)
-        return legal_moves[randint(0, len(legal_moves) - 1)]
+        best_score = float("-inf")
+        best_move = (-1, -1)
+        for m in game.get_legal_moves():
+            # call has been updated with a depth limit
+            v = min_value(game.forecast_move(m), depth - 1, alpha, beta)
+            if v > best_score:
+                best_score = v
+                best_move = m
+            alpha = max(alpha, best_score)
+        #print('*** Exit Minimax ***  with best_move ***', best_move)
+        return best_move
 
 if __name__ == "__main__":
     from isolation import Board
 
     # create an isolation board (by default 7x7)
     player1 = MinimaxPlayer()
-    player2 = MinimaxPlayer()
+    player2 = AlphaBetaPlayer()
     game = Board(player1, player2)
 
     # place player 1 on the board at row 2, column 3, then place player 2 on
