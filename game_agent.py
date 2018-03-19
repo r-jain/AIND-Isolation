@@ -40,7 +40,8 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.get_opponent(player))))
+    # Agressive game play with constant double weightage to negative of opponent moves
+    return float(len(game.get_legal_moves(player)) - (2*len(game.get_legal_moves(game.get_opponent(player)))))
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -65,8 +66,26 @@ def custom_score_2(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    raise NotImplementedError
+    #raise NotImplementedError
 
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    num_my_moves = len(game.get_legal_moves(player))
+    num_opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    num_total_available_moves = len(game.get_blank_spaces())
+    num_total_initial_moves = game.width * game.height
+    percent_remaining = num_total_available_moves/num_total_initial_moves
+
+    # Dynamic scaled aggressive gameplay
+    # Start with initial score based on my_moves 
+    # Ramps up the agressive moves as game progresses 
+    # Agression ramp based on weighted square of opponent moves up as % game complete increases 
+
+    return (percent_remaining * num_my_moves) - ((1 - percent_remaining) * (num_opp_moves**2))
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -91,7 +110,19 @@ def custom_score_3(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    raise NotImplementedError
+    # raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    # return (my_moves - 2*opponent_moves) - (scaled negative of distance from center) 
+    # Scaling factor {max((h-y)**2)  + max((w-x)**2) => 9+9 =18 * (1/2) => range(0,9)
+    # Distance from center scaled for magnitude scale similar to that of (my_moves - opponent_moves) range(-8,8)
+    w, h = game.width / 2., game.height / 2.
+    y, x = game.get_player_location(player)
+    return float(len(game.get_legal_moves(player)) - (2*len(game.get_legal_moves(game.get_opponent(player))))) - float(((h - y)**2 + (w - x)**2)*(1/2)) 
 
 
 class IsolationPlayer:
@@ -116,7 +147,7 @@ class IsolationPlayer:
         positive value large enough to allow the function to return before the
         timer expires.
     """
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=10.):
+    def __init__(self, search_depth=3, score_fn=custom_score, timeout=20.):
         self.search_depth = search_depth
         self.score = score_fn
         self.time_left = None
@@ -161,10 +192,11 @@ class MinimaxPlayer(IsolationPlayer):
 
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
-        if game.get_legal_moves():
-            best_move = game.get_legal_moves()[0]
+        legal_moves = game.get_legal_moves()
+        if not legal_moves:   
+            best_move =  (-1, -1)
         else:
-            best_move = (-1, -1)
+            best_move =  legal_moves[0]
 
         try:
             # The try/except block will automatically catch the exception
@@ -281,7 +313,12 @@ class MinimaxPlayer(IsolationPlayer):
         from a terminal state.
         """
         best_score = float("-inf")
-        best_move = None
+        legal_moves = game.get_legal_moves()
+        if not legal_moves:   
+            best_move =  (-1, -1)
+        else:
+            best_move =  legal_moves[0]
+
         for m in game.get_legal_moves():
             # call has been updated with a depth limit
             v = min_value(game.forecast_move(m), depth - 1)
@@ -335,10 +372,12 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
-        if game.get_legal_moves():
-            best_move = game.get_legal_moves()[0]
+        legal_moves = game.get_legal_moves()
+        if not legal_moves:   
+            best_move =  (-1, -1)
         else:
-            best_move = (-1, -1)
+            best_move =  legal_moves[0]
+
         depth = 1
         try:
             # Iterative Deepening
@@ -469,7 +508,12 @@ class AlphaBetaPlayer(IsolationPlayer):
         from a terminal state.
         """
         best_score = float("-inf")
-        best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
+        if not legal_moves:   
+            best_move =  (-1, -1)
+        else:
+            best_move =  legal_moves[0]
+
         for m in game.get_legal_moves():
             # call has been updated with a depth limit
             v = min_value(game.forecast_move(m), depth - 1, alpha, beta)
