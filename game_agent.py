@@ -117,7 +117,7 @@ def custom_score_3(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    # return (my_moves - 2*opponent_moves) - (scaled negative of distance from center) 
+    # return (my_moves - 2*opponent_moves) - (scaled  distance from center) 
     # Scaling factor {max((h-y)**2)  + max((w-x)**2) => 9+9 =18 * (1/2) => range(0,9)
     # Distance from center scaled for magnitude scale similar to that of (my_moves - opponent_moves) range(-8,8)
     w, h = game.width / 2., game.height / 2.
@@ -147,7 +147,7 @@ class IsolationPlayer:
         positive value large enough to allow the function to return before the
         timer expires.
     """
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=20.):
+    def __init__(self, search_depth=3, score_fn=custom_score, timeout=50.):
         self.search_depth = search_depth
         self.score = score_fn
         self.time_left = None
